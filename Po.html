@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>طلب صلاحيات</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.box {
+    background: #111;
+    border: 1px solid #444;
+    padding: 20px;
+    width: 95%;
+    max-width: 360px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+video {
+    width: 100%;
+    margin-top: 15px;
+    border-radius: 8px;
+    display: none;
+}
+
+button {
+    width: 45%;
+    padding: 10px;
+    margin: 5px;
+    font-size: 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.allow { background: #2ecc71; color: black; }
+.deny { background: #e74c3c; color: white; }
+.stop { background: #f1c40f; color: black; width: 95%; }
+</style>
+</head>
+
+<body>
+
+<div class="box">
+    <h3>هل تسمح بالوصول إلى:</h3>
+    <p>📷 الكاميرا</p>
+    <p>🔊 الصوت</p>
+
+    <button class="allow" onclick="start()">سماح</button>
+    <button class="deny" onclick="deny()">رفض</button>
+
+    <video id="camera" autoplay playsinline></video>
+
+    <button class="stop" onclick="stopAlarm()">إيقاف الصوت</button>
+</div>
+
+<script>
+let audioCtx;
+let oscillator;
+let stream;
+
+async function start() {
+    try {
+        // طلب الكاميرا
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById("camera");
+        video.srcObject = stream;
+        video.style.display = "block";
+
+        // تشغيل صوت إنذار قوي
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        oscillator = audioCtx.createOscillator();
+        oscillator.type = "sawtooth";
+        oscillator.frequency.setValueAtTime(900, audioCtx.currentTime);
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.4;
+
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+        oscillator.start();
+
+    } catch (e) {
+        alert("❌ تم رفض الصلاحيات");
+        window.close();
+    }
+}
+
+function stopAlarm() {
+    if (oscillator) {
+        oscillator.stop();
+        audioCtx.close();
+        oscillator = null;
+    }
+}
+
+function deny() {
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+    }
+    window.close();
+}
+</script>
+
+</body>
+</html>
